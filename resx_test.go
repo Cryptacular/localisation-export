@@ -112,10 +112,10 @@ func TestConvertToResxReadsEmptyValueCorrectly(t *testing.T) {
 func TestConvertToLanguageDictSetsCorrectLanguage(t *testing.T) {
 	r := resx{}
 
-	actual := convertToLanguageDict(r, "en")
+	actual := convertToLanguage(r, "en")
 
-	if actual.dict.language != "en" {
-		t.Errorf(`Actual: "%s"; Expected: "en"`, actual.dict.language)
+	if actual.languageCode != "EN" {
+		t.Errorf(`Actual: "%s"; Expected: "EN"`, actual.languageCode)
 	}
 }
 
@@ -133,28 +133,26 @@ func TestConvertToLanguageDictMatchesCorrectKeyToValue(t *testing.T) {
 		},
 	}
 
-	actual := convertToLanguageDict(r, "en")
+	actual := convertToLanguage(r, "en")
 
-	if value := actual.dict.entries["A nose on..."].Value; value != "your face" {
+	if value := actual.dict["A nose on..."].Value; value != "your face" {
 		t.Errorf(`Actual: %s; Expected: "A nose on": "your face"`, `"A nose on...": "`+value+`"`)
 	}
 }
 
 func TestConvertToSpreadsheetHasHeaderRow(t *testing.T) {
-	dicts := []languageDict{
-		languageDict{
-			language: "en",
-		},
-		languageDict{
-			language: "nl",
-		},
-		languageDict{
-			language: "de",
-		},
-	}
-
 	langs := languages{
-		dicts: dicts,
+		base: language{
+			languageCode: "EN",
+		},
+		translations: []language{
+			language{
+				languageCode: "NL",
+			},
+			language{
+				languageCode: "DE",
+			},
+		},
 	}
 
 	actual := convertToSpreadsheet(langs)
@@ -184,11 +182,13 @@ func TestConvertToSpreadsheetReturnsRowsInCorrectOrder(t *testing.T) {
 		},
 	}
 
-	l := convertToLanguageDict(r, "en")
+	l := convertToLanguage(r, "en")
 
 	langs := languages{
-		dicts: []languageDict{l.dict},
-		keys:  l.keys,
+		base: language{
+			dict: l.dict,
+			keys: l.keys,
+		},
 	}
 
 	actual := convertToSpreadsheet(langs)
@@ -221,12 +221,14 @@ func TestConvertToSpreadsheetMatchesKeysToLanguagesCorrectly(t *testing.T) {
 			},
 		},
 	}
-	lEnglish := convertToLanguageDict(german, "en")
-	lDutch := convertToLanguageDict(dutch, "nl")
+	lGerman := convertToLanguage(german, "de")
+	lDutch := convertToLanguage(dutch, "nl")
 
 	langs := languages{
-		dicts: []languageDict{lEnglish.dict, lDutch.dict},
-		keys:  lEnglish.keys,
+		base: lGerman,
+		translations: []language{
+			lDutch,
+		},
 	}
 
 	actual := convertToSpreadsheet(langs)
@@ -264,12 +266,14 @@ func TestConvertToSpreadsheetIncludesCommentFromFirstLanguage(t *testing.T) {
 			},
 		},
 	}
-	lEnglish := convertToLanguageDict(english, "en")
-	lDutch := convertToLanguageDict(dutch, "nl")
+	lEnglish := convertToLanguage(english, "en")
+	lDutch := convertToLanguage(dutch, "nl")
 
 	langs := languages{
-		dicts: []languageDict{lEnglish.dict, lDutch.dict},
-		keys:  lEnglish.keys,
+		base: lEnglish,
+		translations: []language{
+			lDutch,
+		},
 	}
 
 	actual := convertToSpreadsheet(langs)
@@ -313,12 +317,17 @@ func TestConvertToSpreadsheetWorksWhenLanguageIsMissingKeys(t *testing.T) {
 			},
 		},
 	}
-	lEnglish := convertToLanguageDict(english, "en")
-	lDutch := convertToLanguageDict(dutch, "nl")
+	lEnglish := convertToLanguage(english, "en")
+	lDutch := convertToLanguage(dutch, "nl")
 
 	langs := languages{
-		dicts: []languageDict{lEnglish.dict, lDutch.dict},
-		keys:  lEnglish.keys,
+		base: language{
+			dict: lEnglish.dict,
+			keys: lEnglish.keys,
+		},
+		translations: []language{
+			lDutch,
+		},
 	}
 
 	actual := convertToSpreadsheet(langs)

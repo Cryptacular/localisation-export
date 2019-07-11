@@ -12,20 +12,27 @@ func main() {
 
 	params := os.Args[1:]
 
-	dictionaries := languages{}
 	baseLang := readResx("./UIStrings.resx", "en")
-	dictionaries.dicts = []languageDict{baseLang.dict}
-	dictionaries.keys = baseLang.keys
+	otherLangs := []language{}
 
-	for _, l := range params {
-		d := readResx("./UIStrings."+l+".resx", l)
-		dictionaries.dicts = append(dictionaries.dicts, d.dict)
+	for _, p := range params {
+		l := readResx("./UIStrings."+p+".resx", p)
+		otherLangs = append(otherLangs, l)
 	}
 
-	out := convertToSpreadsheet(dictionaries)
+	langs := buildLanguages(baseLang, otherLangs)
+
+	out := convertToSpreadsheet(langs)
 
 	filename := buildFilename(params)
 	writeExcel(out, filename)
+}
+
+func buildLanguages(baseLang language, others []language) languages {
+	return languages{
+		base:         baseLang,
+		translations: others,
+	}
 }
 
 func buildFilename(languages []string) string {

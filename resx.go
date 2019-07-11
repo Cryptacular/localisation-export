@@ -13,7 +13,7 @@ import (
 func readResx(filename, lang string) language {
 	file := readFile(filename)
 	r := convertToResx(file)
-	return convertToLanguageDict(r, lang)
+	return convertToLanguage(r, lang)
 }
 
 func readFile(filename string) []byte {
@@ -32,44 +32,42 @@ func convertToResx(content []byte) resx {
 	return r
 }
 
-func convertToLanguageDict(r resx, lang string) language {
-	ld := languageDict{
-		language: lang,
-		entries:  map[string]entry{},
-	}
+func convertToLanguage(r resx, lang string) language {
+	ld := map[string]entry{}
 
 	keys := []string{}
 
 	for i := range r.Entries {
 		e := r.Entries[i]
-		ld.entries[e.Key] = entry{e.Value, e.Comment}
+		ld[e.Key] = entry{e.Value, e.Comment}
 		keys = append(keys, e.Key)
 	}
 
 	return language{
-		dict: ld,
-		keys: keys,
+		dict:         ld,
+		keys:         keys,
+		languageCode: strings.ToUpper(lang),
 	}
 }
 
 func convertToSpreadsheet(langs languages) [][]string {
-	headerRow := []string{"Key"}
+	headerRow := []string{"Key", langs.base.languageCode}
 
-	for _, l := range langs.dicts {
-		headerRow = append(headerRow, strings.ToUpper(l.language))
+	for _, l := range langs.translations {
+		headerRow = append(headerRow, l.languageCode)
 	}
 
 	headerRow = append(headerRow, "Comments")
 	rows := [][]string{headerRow}
 
-	for _, key := range langs.keys {
-		row := []string{key}
+	for _, key := range langs.base.keys {
+		row := []string{key, langs.base.dict[key].Value}
 
-		for _, l := range langs.dicts {
-			row = append(row, l.entries[key].Value)
+		for _, l := range langs.translations {
+			row = append(row, l.dict[key].Value)
 		}
 
-		row = append(row, langs.dicts[0].entries[key].Comment)
+		row = append(row, langs.base.dict[key].Comment)
 
 		rows = append(rows, row)
 	}
@@ -101,20 +99,18 @@ type resxEntry struct {
 	Comment string `xml:"comment"`
 }
 
-type language struct {
-	dict languageDict
-	keys []string
-}
-
 type languages struct {
-	dicts []languageDict
-	keys  []string
+	base         language
+	translations []language
 }
 
-type languageDict struct {
-	language string
-	entries  map[string]entry
+type language struct {
+	dict         languageDict
+	languageCode string
+	keys         []string
 }
+
+type languageDict map[string]entry
 
 type entry struct {
 	Value   string
