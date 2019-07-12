@@ -10,20 +10,19 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize"
 )
 
-func readResx(filename, lang string) language {
-	file := readFile(filename)
-	r := convertToResx(file)
-	return convertToLanguage(r, lang)
-}
-
-func readFile(filename string) []byte {
-	f, err := ioutil.ReadFile(filename)
+func readResx(filename, lang string) (language, error) {
+	file, err := readFile(filename)
 
 	if err != nil {
-		panic("File not found: " + filename)
+		return language{}, err
 	}
 
-	return f
+	r := convertToResx(file)
+	return convertToLanguage(r, lang), nil
+}
+
+func readFile(filename string) ([]byte, error) {
+	return ioutil.ReadFile(filename)
 }
 
 func convertToResx(content []byte) resx {
