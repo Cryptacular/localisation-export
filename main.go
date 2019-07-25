@@ -1,56 +1,60 @@
 package main
 
 import (
+	"errors"
 	"strings"
+
+	"github.com/Cryptacular/resx-exporter/excel"
+	"github.com/Cryptacular/resx-exporter/gui"
+	"github.com/Cryptacular/resx-exporter/localisation"
+	"github.com/Cryptacular/resx-exporter/resx"
+	"github.com/Cryptacular/resx-exporter/xliff"
 )
 
-var availableLanguages = []string{"de", "el", "es", "fr", "it", "ja", "ko", "nl", "pt-br", "ro", "sv", "th", "zh"}
+const (
+	langResx  = iota
+	langXliff = iota
+	langXML   = iota
+)
 
 func main() {
-	createGui(execute)
+	gui.Create(execute)
 }
 
-func execute(path string, languagesToInclude []string) error {
-	langs, err := buildLanguages(path, languagesToInclude)
+func execute(fileType int, path string, languagesToInclude []string) error {
+	builder, err := languageBuilder(fileType)
 
 	if err != nil {
 		return err
 	}
 
-	out := convertToSpreadsheet(langs)
+	langs, err := builder.Read(path, languagesToInclude)
+
+	if err != nil {
+		return err
+	}
+
+	out := localisation.ConvertToSpreadsheet(langs)
 
 	filename := buildFilename(path, languagesToInclude)
-	writeExcel(out, filename)
+	excel.Write(out, filename)
 
 	return nil
 }
 
-func buildLanguages(path string, languagesToInclude []string) (languages, error) {
-	baseLang, err := readResx(path+"/UIStrings.resx", "en")
-
-	if err != nil {
-		return languages{}, err
+func languageBuilder(fileType int) (localisation.Reader, error) {
+	if fileType == langResx {
+		return resx.ResxReader{}, nil
+	} else if fileType == langXliff {
+		return xliff.XliffReader{}, nil
 	}
 
-	otherLangs := []language{}
-
-	for _, p := range languagesToInclude {
-		l, err := readResx(path+"/UIStrings."+p+".resx", p)
-		if err != nil {
-			return languages{}, err
-		}
-		otherLangs = append(otherLangs, l)
-	}
-
-	return languages{
-		base:         baseLang,
-		translations: otherLangs,
-	}, nil
+	return nil, errors.New("No valid file types found")
 }
 
-func buildFilename(path string, languages []string) string {
+func buildFilename(path string, Languages []string) string {
 	filename := path + "/EN"
-	for _, l := range languages {
+	for _, l := range Languages {
 		filename += "-" + strings.ToUpper(l)
 	}
 	filename += ".xlsx"

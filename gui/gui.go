@@ -1,4 +1,4 @@
-package main
+package gui
 
 import (
 	"strings"
@@ -6,7 +6,16 @@ import (
 	"github.com/tadvi/winc"
 )
 
-func createGui(onExecute func(string, []string) error) {
+const (
+	langResx  = iota
+	langXliff = iota
+	langXML   = iota
+)
+
+var availableLanguages = []string{"de", "el", "es", "fr", "it", "ja", "ko", "nl", "pt-br", "ro", "sv", "th", "zh"}
+
+// Create shows the Windows GUI to export localised files
+func Create(onExecute func(int, string, []string) error) {
 	mainWindow := winc.NewForm(nil)
 	mainWindow.SetSize(300, 200+(len(availableLanguages)/2+1)*30)
 	mainWindow.SetText("RESX Exporter")
@@ -17,6 +26,18 @@ func createGui(onExecute func(string, []string) error) {
 
 	pathTextBox := winc.NewEdit(mainWindow)
 	pathTextBox.SetPos(10, 40)
+
+	fileType := langResx
+	fileTypeDropdown := winc.NewComboBox(mainWindow)
+	fileTypeDropdown.SetPos(220, 40)
+	fileTypeDropdown.SetSize(50, 20)
+	fileTypeDropdown.InsertItem(langResx, "ISW")
+	fileTypeDropdown.InsertItem(langXliff, "iOS")
+	fileTypeDropdown.InsertItem(langXML, "Android")
+	fileTypeDropdown.SetSelectedItem(langResx)
+	fileTypeDropdown.OnClose().Bind(func(e *winc.Event) {
+		fileType = fileTypeDropdown.SelectedItem()
+	})
 
 	checkboxes := []langCheckbox{}
 	for i, l := range availableLanguages {
@@ -52,7 +73,7 @@ func createGui(onExecute func(string, []string) error) {
 				languagesToInclude = append(languagesToInclude, c.languageCode)
 			}
 		}
-		err := onExecute(pathTextBox.Text(), languagesToInclude)
+		err := onExecute(fileType, pathTextBox.Text(), languagesToInclude)
 		if err != nil {
 			responseLabel.SetText("Oops! Please enter a valid folder path :)")
 			responseLabel.Show()
