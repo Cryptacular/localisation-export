@@ -3,15 +3,45 @@ package resx
 import (
 	"encoding/xml"
 	"io/ioutil"
+	"strings"
 
 	"github.com/Cryptacular/resx-exporter/localisation"
 )
 
-// ResxReader implements the `LocalisationReader` interface to read RESX files
-type ResxReader struct{}
+// Reader implements the `LocalisationReader` interface to read RESX files
+type Reader struct{}
 
-func (r ResxReader) Read(path string, languagesToInclude []string) (localisation.Languages, error) {
+func (r Reader) Read(path string, languagesToInclude []string) (localisation.Languages, error) {
 	return buildLanguagesFromResx(path, languagesToInclude)
+}
+
+// DetectLanguages looks at a folder path and checks what languages are available
+func (r Reader) DetectLanguages(path string) []string {
+	langs := []string{}
+	files, err := ioutil.ReadDir(path)
+
+	if err != nil {
+		return langs
+	}
+
+	for _, f := range files {
+		name := f.Name()
+		isDirectory := f.IsDir()
+
+		if !isDirectory && strings.HasSuffix(name, ".resx") {
+			parts := strings.Split(name, ".")
+			length := len(parts)
+
+			if length <= 2 {
+				continue
+			}
+
+			language := parts[length-2]
+			langs = append(langs, language)
+		}
+	}
+
+	return langs
 }
 
 func buildLanguagesFromResx(path string, languagesToInclude []string) (localisation.Languages, error) {

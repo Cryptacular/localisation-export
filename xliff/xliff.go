@@ -3,19 +3,51 @@ package xliff
 import (
 	"encoding/xml"
 	"io/ioutil"
+	"strings"
 
 	"github.com/Cryptacular/resx-exporter/localisation"
 )
 
-// XliffReader implements the `LocalisationReader` interface to read XLIFF files
-type XliffReader struct{}
+// Reader implements the `LocalisationReader` interface to read XLIFF files
+type Reader struct{}
 
-func (x XliffReader) Read(path string, languagesToInclude []string) (localisation.Languages, error) {
+func (r Reader) Read(path string, languagesToInclude []string) (localisation.Languages, error) {
 	return buildLanguagesFromXliff(path, languagesToInclude)
 }
 
+// DetectLanguages looks at a folder path and checks what languages are available
+func (r Reader) DetectLanguages(path string) []string {
+	langs := []string{}
+	files, err := ioutil.ReadDir(path)
+
+	if err != nil {
+		return langs
+	}
+
+	for _, f := range files {
+		name := f.Name()
+		isDirectory := f.IsDir()
+
+		if isDirectory && strings.HasSuffix(name, ".xcloc") {
+			parts := strings.Split(name, ".")
+
+			if len(parts) > 2 {
+				continue
+			}
+
+			language := parts[0]
+			if language == "en" {
+				continue
+			}
+			langs = append(langs, language)
+		}
+	}
+
+	return langs
+}
+
 func buildLanguagesFromXliff(path string, languagesToInclude []string) (localisation.Languages, error) {
-	baseLang, err := readXliff(path+"/en.xliff", "en")
+	baseLang, err := readXliff(path+"/en.xcloc/Localized Contents/en.xliff", "en")
 
 	if err != nil {
 		return localisation.Languages{}, err
@@ -24,7 +56,7 @@ func buildLanguagesFromXliff(path string, languagesToInclude []string) (localisa
 	otherLangs := []localisation.Language{}
 
 	for _, p := range languagesToInclude {
-		l, err := readXliff(path+"/"+p+".xliff", p)
+		l, err := readXliff(path+"/"+p+".xcloc/Localized Contents/"+p+".xliff", p)
 		if err != nil {
 			return localisation.Languages{}, err
 		}
@@ -55,6 +87,9 @@ func convertToXliff(content []byte) localisation.LanguageEntries {
 
 	for _, f := range xd.File {
 		for _, tu := range f.Body.TransUnit {
+			if tu.Target == nil {
+				continue
+			}
 			x = append(x, localisation.LanguageEntry{
 				Key:     tu.ID,
 				Value:   tu.Target.Inner,

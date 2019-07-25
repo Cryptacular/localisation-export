@@ -5,6 +5,7 @@ import "strings"
 // Reader reads files of a particular file type and converts it to the `languages` type
 type Reader interface {
 	Read(path string, languagesToInclude []string) (Languages, error)
+	DetectLanguages(path string) []string
 }
 
 // ConvertToLanguage converts a slice of keys, values and comments into a `Language` object
@@ -50,6 +51,12 @@ func ConvertToSpreadsheet(langs Languages) [][]string {
 	}
 
 	return rows
+}
+
+// Format specifies to format of the files and what languages are available
+type Format struct {
+	FileType           int
+	AvailableLanguages []string
 }
 
 // LanguageEntries is a slice of `LanguageEntry`, which contains Keys, Values and Comments
