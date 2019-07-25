@@ -1,4 +1,4 @@
-package resx
+package xml
 
 import (
 	"encoding/xml"
@@ -12,7 +12,7 @@ import (
 type Reader struct{}
 
 func (r Reader) Read(path string, languagesToInclude []string) (localisation.Languages, error) {
-	return buildLanguagesFromResx(path, languagesToInclude)
+	return buildLanguagesFromXML(path, languagesToInclude)
 }
 
 // DetectLanguages looks at a folder path and checks what languages are available
@@ -28,15 +28,14 @@ func (r Reader) DetectLanguages(path string) []string {
 		name := f.Name()
 		isDirectory := f.IsDir()
 
-		if !isDirectory && strings.HasSuffix(name, ".resx") {
-			parts := strings.Split(name, ".")
-			length := len(parts)
+		if isDirectory && strings.HasPrefix(name, "values") {
+			parts := strings.Split(name, "-")
 
-			if length <= 2 {
+			if len(parts) < 2 {
 				continue
 			}
 
-			language := parts[length-2]
+			language := strings.Join(parts[1:], "-")
 			langs = append(langs, language)
 		}
 	}
@@ -44,8 +43,8 @@ func (r Reader) DetectLanguages(path string) []string {
 	return langs
 }
 
-func buildLanguagesFromResx(path string, languagesToInclude []string) (localisation.Languages, error) {
-	baseLang, err := readResx(path+"/UIStrings.resx", "en")
+func buildLanguagesFromXML(path string, languagesToInclude []string) (localisation.Languages, error) {
+	baseLang, err := readXML(path+"/values/strings.xml", "en")
 
 	if err != nil {
 		return localisation.Languages{}, err
@@ -54,7 +53,7 @@ func buildLanguagesFromResx(path string, languagesToInclude []string) (localisat
 	otherLangs := []localisation.Language{}
 
 	for _, p := range languagesToInclude {
-		l, err := readResx(path+"/UIStrings."+p+".resx", p)
+		l, err := readXML(path+"/values-"+p+"/strings.xml", p)
 		if err != nil {
 			return localisation.Languages{}, err
 		}
@@ -67,39 +66,37 @@ func buildLanguagesFromResx(path string, languagesToInclude []string) (localisat
 	}, nil
 }
 
-func readResx(filename, lang string) (localisation.Language, error) {
+func readXML(filename, lang string) (localisation.Language, error) {
 	file, err := ioutil.ReadFile(filename)
 
 	if err != nil {
 		return localisation.Language{}, err
 	}
 
-	r := convertToResx(file)
+	r := convertToValues(file)
 	return localisation.ConvertToLanguage(r, lang), nil
 }
 
-func convertToResx(content []byte) localisation.LanguageEntries {
+func convertToValues(content []byte) localisation.LanguageEntries {
 	le := localisation.LanguageEntries{}
-	r := resx{}
+	r := values{}
 	xml.Unmarshal([]byte(content), &r)
 
 	for _, e := range r.Entries {
 		le = append(le, localisation.LanguageEntry{
-			Key:     e.Key,
-			Value:   e.Value,
-			Comment: e.Comment,
+			Key:   e.Key,
+			Value: e.Value,
 		})
 	}
 
 	return le
 }
 
-type resx struct {
-	Entries []resxEntry `xml:"data"`
+type values struct {
+	Entries []value `xml:"string"`
 }
 
-type resxEntry struct {
-	Key     string `xml:"name,attr"`
-	Value   string `xml:"value"`
-	Comment string `xml:"comment"`
+type value struct {
+	Key   string `xml:"name,attr"`
+	Value string `xml:",chardata"`
 }

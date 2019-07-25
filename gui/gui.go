@@ -3,7 +3,7 @@ package gui
 import (
 	"strings"
 
-	"github.com/Cryptacular/resx-exporter/localisation"
+	"github.com/Cryptacular/localisation-export/localisation"
 	"github.com/tadvi/winc"
 )
 
@@ -27,7 +27,7 @@ type Props interface {
 // Create shows the Windows GUI to export localised files
 func Create(props Props) {
 	mainWindow := winc.NewForm(nil)
-	mainWindow.SetText("RESX Exporter")
+	mainWindow.SetText("Localisation Export")
 	resizeWindow(mainWindow, availableLanguages)
 
 	label := winc.NewLabel(mainWindow)
@@ -37,16 +37,12 @@ func Create(props Props) {
 	pathTextBox := winc.NewEdit(mainWindow)
 	pathTextBox.SetPos(10, 40)
 
-	fileType := langResx
 	fileTypeDropdown := winc.NewComboBox(mainWindow)
 	fileTypeDropdown.SetPos(220, 40)
 	fileTypeDropdown.SetSize(80, 20)
 	fileTypeDropdown.InsertItem(langResx, "ISW")
 	fileTypeDropdown.InsertItem(langXliff, "iOS")
 	fileTypeDropdown.InsertItem(langXML, "Android")
-	fileTypeDropdown.OnClose().Bind(func(e *winc.Event) {
-		fileType = fileTypeDropdown.SelectedItem()
-	})
 
 	createLangCheckboxes(mainWindow, availableLanguages)
 

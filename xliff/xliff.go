@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/Cryptacular/resx-exporter/localisation"
+	"github.com/Cryptacular/localisation-export/localisation"
 )
 
 // Reader implements the `LocalisationReader` interface to read XLIFF files

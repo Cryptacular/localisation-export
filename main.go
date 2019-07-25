@@ -5,11 +5,12 @@ import (
 	"io/ioutil"
 	"strings"
 
-	"github.com/Cryptacular/resx-exporter/excel"
-	"github.com/Cryptacular/resx-exporter/gui"
-	"github.com/Cryptacular/resx-exporter/localisation"
-	"github.com/Cryptacular/resx-exporter/resx"
-	"github.com/Cryptacular/resx-exporter/xliff"
+	"github.com/Cryptacular/localisation-export/excel"
+	"github.com/Cryptacular/localisation-export/gui"
+	"github.com/Cryptacular/localisation-export/localisation"
+	"github.com/Cryptacular/localisation-export/resx"
+	"github.com/Cryptacular/localisation-export/xliff"
+	"github.com/Cryptacular/localisation-export/xml"
 )
 
 const (
@@ -114,6 +115,8 @@ func localisationReaderFactory(fileType int) (localisation.Reader, error) {
 		return resx.Reader{}, nil
 	} else if fileType == langXliff {
 		return xliff.Reader{}, nil
+	} else if fileType == langXML {
+		return xml.Reader{}, nil
 	}
 
 	return nil, errors.New("No valid file types found")
